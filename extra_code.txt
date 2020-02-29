@@ -76,3 +76,18 @@
         print(str(i) + ": " + str(opinions[i]))
     """
     return opinions
+    
+    def get_other_likers(person, rating):
+    # Gets a movie from the person's rating
+    movid = get_movid(person, rating)
+    
+    #gets all opintions of movie movid
+    outl = movie_data[movie_data["movie"] == movid] 
+    rec = outl[outl['rating']>=0]
+    outl = movie_data[movie_data["movie"] == movid] 
+    exp = outl[outl['expect']>=0]
+    
+    #print(exp)
+    rep = pd.concat([exp[exp["expect"] == 2], rec[rec["rating"] == rating]], sort=True)
+    #print(rep)
+    return rep

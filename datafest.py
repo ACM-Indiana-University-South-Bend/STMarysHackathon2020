@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
 from numba import jit, cuda
-imp = pd.read_csv("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/impressions-train.csv")
-fin = pd.read_csv("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/ratings-final.csv")
-test = pd.read_csv("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/test.csv")
-#codes = pd.read_txt("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/test.csv")
+imp = pd.read_csv("./CompetitionDataFinal/impressions-train.csv")
+fin = pd.read_csv("./CompetitionDataFinal/ratings-final.csv")
+test = pd.read_csv("./CompetitionDataFinal/test.csv")
 
 movie_data = pd.concat([imp, fin], sort=True)
 
@@ -28,6 +27,23 @@ def get_person_expect(person, rating):
     e = outl[outl['expect'] == rating]
     return e
 
+def get_person_opinion_on_movie(person, movid):
+    
+    outl = movie_data[movie_data["person"] == person]
+
+    outl = outl[outl["movie"] == movid]
+    
+    r = outl[outl['rating'] >= 0]['rating']
+    e = outl[outl['expect'] >= 0]['expect']
+    
+    if(r.any()):
+        if int(r) >= 0:
+            return int(r)
+        elif int(e) >= 0:
+            return int(e)
+    else:
+        return -1
+
 #Returns the list of everyone that rated this movie the same
 def same_rating(df, movie, rating):
     a = df[df['rating'] == rating]
@@ -44,23 +60,6 @@ def get_movid(person, rating):
      # movid is the movie id    
     movid = personrating[personrating['rating'] == rating].iloc[0]['movie']
     return movid
-
-def get_other_likers(person, rating):
-    # Gets a movie from the person's rating
-    movid = get_movid(person, rating)
-    
-    #gets all opintions of movie movid
-    outl = movie_data[movie_data["movie"] == movid] 
-    rec = outl[outl['rating']>=0]
-    outl = movie_data[movie_data["movie"] == movid] 
-    exp = outl[outl['expect']>=0]
-    
-    #print(exp)
-    rep = pd.concat([exp[exp["expect"] == 2], rec[rec["rating"] == rating]], sort=True)
-    #print(rep)
-    return rep
-
-
 
 def get_person_opinions(person):
     person_opinions = {}
@@ -81,17 +80,25 @@ def get_person_opinions(person):
             person_opinions[h] = exp
     return person_opinions
 
+# Input : top 10% of people with similar tastes
+#       : movie id
+# Output: recommended score for movie 
+def predict(people, movie):
+    #print(people)
+    opinions = get_person_opinion_on_movie(people, movie)
+    return opinions
+
 #main function
 #@jit(target ="cuda") 
-def get_recommend(subject):
-    print("In get_recommend")
+def get_recommend(subject, movie):
+    print("In get_recommend for movie " + str(movie))
     
     subject_opinions = get_person_opinions(subject)
     
     score = {}
     #572 people
     for person in range(573):
-        print('people = ' + str(person))
+        #print('people = ' + str(person))
         person_opinions = get_person_opinions(person)
         score[person] = 0
         
@@ -103,8 +110,36 @@ def get_recommend(subject):
                         score[person] += 2
                     elif (sub != 0 and per != 0):
                         score[person] += 1
+                        
     score = sorted(score.items(), key=lambda x: x[1],reverse=True)
-    print(score)
     
-person = 0
-get_recommend(person)
+    top = int(len(score)/10) + 1
+    matches = [x[0] for x in score[1:top]]
+    #print(matches)
+    
+    ratings = {}
+    
+    for i in matches: 
+        ratings[i] = predict(i, movie)
+        
+    recommended = {2:0, 1:0, 0:0, -1:0}
+    for i in ratings.values():
+        recommended[i] += 1
+    recommended.pop(-1)
+    recommended = sorted(recommended.items(), key=lambda x: x[1],reverse=True)
+    print(recommended)
+    print("Recommneded rating for movie " + str(movie) + ":" + str(recommended[0][0]))
+    
+    
+
+    
+#person = 36
+    outl = movie_data[movie_data["person"] == person]
+
+    outl = outl[outl["movie"] == movid]
+    
+for person in test['reviewerid']:
+    testperson = test[test["reviewerid"] == person]
+    print(test[test["reviewerid"] == person])
+    for movie in testperson['movie-code']:
+        get_recommend(person, movie)
