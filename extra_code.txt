@@ -1,0 +1,78 @@
+    # Gets a movie that a person likes, and gets the list of everyone else that has an opinion of 2
+    # likers_df is the DataFrame, likers is the names
+    likers_df = get_other_likers(subject, 2)
+    likers = likers_df["person"]
+     likes = {}
+    for i in likers: 
+        #print(i)
+        for h in pd.concat([get_person_rating(i, 2)['movie'], get_person_expect(i, 2)['movie']], sort=True):
+            #print(h)
+            if h in likes: 
+                likes[h] += 1
+            else: 
+                likes[h] = 1
+    # Prints largest amount of rating = 2
+    print("Key: " + str(max(likes, key=likes.get)))
+    print("Value: " + str(max(likes.values())))
+    current_likers = final[final["person"] == likers.iloc[0]]
+    #print(likers_df['person'])
+    for i in likers_df["person"]:
+        # current_liker is the dataframe of the liker at position i from the list of likers that like the movie we are looking at
+        # it has expect, movie, person, and rating for all of the movies they like 
+        #this_liker = final[final["person"] == i]
+        #pd.concat([current_likers, this_liker], sort=True)
+        current_likers = pd.concat([final[final["person"] == i], current_likers])
+        #print(final[final["person"]==i])
+    
+        #print(current_likers)
+    #print(current_likers)
+    
+    
+    outl = movie_data[movie_data["person"] == subject]
+    r = outl[outl['rating'] >= 0]
+    e = outl[outl['expect'] >= 0]
+    opinions = pd.concat([r, e], sort=True)
+    
+    for i in range(3):
+        print("In for i in range(3)")
+        opinions = get_person_rating(subject, i)
+        opinions = pd.concat([opinions, get_person_expect(subject, i)], sort=True)
+        for h in opinions['movie']:
+            print("In 'h' loop")
+            #print(h)
+            #print(np.isnan(opinions[opinions['movie'] == h]['rating']))
+            boolNan = ((np.isnan(opinions[opinions['movie'] == h]['rating'])).all())
+            if (boolNan):
+                subject_opinions[h] = opinions[opinions['movie'] == h]['expect'].values[0]
+                #print(opinions[opinions['movie'] == h]['expect'].values[0])
+            else: #if (np.isnan(opinions[opinions['movie'] == h]['expect']).iloc(0)):
+                subject_opinions[h] = opinions[opinions['movie'] == h]['rating'].values[0]
+                #print('error!')
+            
+            print("End of h loop")
+    #print(subject_opinions)
+        print("end of i loop")
+        
+        def get_movie_opinions(movid, df):
+ 
+    #gets all ratings of movie movid
+    rec = get_ratings(movid, df)
+    exp = get_expects(movid, df)
+    #print(exp)
+    
+    
+    
+    #Gets array of opinions in order 0, 1, 2
+    opinions=[None, None, None]
+    for i in range(3): 
+        recsme = same_rating(rec, movid, i)
+        expsme = same_expect(exp, movid, i)
+        opinions[i] = len(recsme) + len(expsme)
+        
+    # Print 0, 1, 2 values
+    """
+    print("Person: " + str(person) + "\nMovie: " + str(movid) + "\nOther Ratings:")
+    for i in range(3):
+        print(str(i) + ": " + str(opinions[i]))
+    """
+    return opinions

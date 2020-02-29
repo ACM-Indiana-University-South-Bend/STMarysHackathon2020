@@ -1,11 +1,12 @@
 import pandas as pd
 import numpy as np
+from numba import jit, cuda
 imp = pd.read_csv("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/impressions-train.csv")
 fin = pd.read_csv("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/ratings-final.csv")
 test = pd.read_csv("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/test.csv")
 #codes = pd.read_txt("C:/Users/rober/Documents/NetBeansProjects/STMarysHackathon/CompetitionDataFinal/test.csv")
 
-final = pd.concat([imp, fin], sort=True)
+movie_data = pd.concat([imp, fin], sort=True)
 
 def get_ratings(movie, df):
     outl = df[df["movie"] == movie] 
@@ -18,12 +19,12 @@ def get_expects(movie, df):
     return expects
 
 def get_person_rating(person, rating):
-    outl = final[final["person"] == person]
+    outl = movie_data[movie_data["person"] == person]
     r = outl[outl['rating'] == rating]
     return r
 
 def get_person_expect(person, rating):
-    outl = final[final["person"] == person]
+    outl = movie_data[movie_data["person"] == person]
     e = outl[outl['expect'] == rating]
     return e
 
@@ -49,9 +50,9 @@ def get_other_likers(person, rating):
     movid = get_movid(person, rating)
     
     #gets all opintions of movie movid
-    outl = final[final["movie"] == movid] 
+    outl = movie_data[movie_data["movie"] == movid] 
     rec = outl[outl['rating']>=0]
-    outl = final[final["movie"] == movid] 
+    outl = movie_data[movie_data["movie"] == movid] 
     exp = outl[outl['expect']>=0]
     
     #print(exp)
@@ -59,60 +60,51 @@ def get_other_likers(person, rating):
     #print(rep)
     return rep
 
-def get_movie_opinions(movid, df):
- 
-    #gets all ratings of movie movid
-    rec = get_ratings(movid, df)
-    exp = get_expects(movid, df)
-    #print(exp)
+
+
+def get_person_opinions(person):
+    person_opinions = {}
     
-    #Gets array of opinions in order 0, 1, 2
-    opinions=[None, None, None]
-    for i in range(3): 
-        recsme = same_rating(rec, movid, i)
-        expsme = same_expect(exp, movid, i)
-        opinions[i] = len(recsme) + len(expsme)
+    outl = movie_data[movie_data["person"] == person]
+    r = outl[outl['rating'] >= 0]
+    e = outl[outl['expect'] >= 0]
+    opinions = pd.concat([r, e], sort=True)
+    
+    for h in opinions['movie']: # h is movie id
         
-    # Print 0, 1, 2 values
-    """
-    print("Person: " + str(person) + "\nMovie: " + str(movid) + "\nOther Ratings:")
-    for i in range(3):
-        print(str(i) + ": " + str(opinions[i]))
-    """
-    return opinions
+        rat = opinions[opinions['movie'] == h]['rating'].values[0]
+        exp = opinions[opinions['movie'] == h]['expect'].values[0]
+        
+        if rat >= 0: 
+            person_opinions[h] = rat
+        elif exp >= 0:
+            person_opinions[h] = exp
+    return person_opinions
 
 #main function
-def get_recommend(person):
-    # Gets a movie that a person likes, and gets the list of everyone else that has an opinion of 2
-    # likers_df is the DataFrame, likers is the names
-    likers_df = get_other_likers(person, 2)
-    likers = likers_df["person"]
-    # Dict of all movies that likers opinion as 2
-    likes = {}
-    for i in likers: 
-        #print(i)
-        for h in pd.concat([get_person_rating(i, 2)['movie'], get_person_expect(i, 2)['movie']], sort=True):
-            #print(h)
-            if h in likes: 
-                likes[h] += 1
-            else: 
-                likes[h] = 1
-    # Prints largest amount of rating = 2
-    print("Key: " + str(max(likes, key=likes.get)))
-    print("Value: " + str(max(likes.values())))
-    scores = {}
-    current_likers = final[final["person"] == likers.iloc[0]]
-    #print(likers_df['person'])
-    for i in likers_df["person"]:
-        # current_liker is the dataframe of the liker at position i from the list of likers that like the movie we are looking at
-        # it has expect, movie, person, and rating for all of the movies they like 
-        #this_liker = final[final["person"] == i]
-        #pd.concat([current_likers, this_liker], sort=True)
-        current_likers = pd.concat([final[final["person"] == i], current_likers])
-        #print(final[final["person"]==i])
+#@jit(target ="cuda") 
+def get_recommend(subject):
+    print("In get_recommend")
     
-        #print(current_likers)
-    print(current_likers)
+    subject_opinions = get_person_opinions(subject)
     
-person = 4
+    score = {}
+    #572 people
+    for person in range(573):
+        print('people = ' + str(person))
+        person_opinions = get_person_opinions(person)
+        score[person] = 0
+        
+        for movid in subject_opinions:
+                if movid in person_opinions.keys():
+                    sub = subject_opinions[movid]
+                    per = person_opinions[movid]
+                    if sub == per:
+                        score[person] += 2
+                    elif (sub != 0 and per != 0):
+                        score[person] += 1
+    score = sorted(score.items(), key=lambda x: x[1],reverse=True)
+    print(score)
+    
+person = 0
 get_recommend(person)
