@@ -1,8 +1,5 @@
 from distutils.core import setup
-from Cython.Build import cythonize
 import pandas as pd
-import multiprocessing
-from numba import jit, autojit
 
 
 #import numpy as np
