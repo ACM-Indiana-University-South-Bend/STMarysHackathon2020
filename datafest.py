@@ -1,7 +1,8 @@
+from distutils.core import setup
+from Cython.Build import cythonize
 import pandas as pd
 import multiprocessing
-pool = multiprocessing.Pool(processes=7)
-
+from numba import jit, autojit
 
 
 #import numpy as np
@@ -52,15 +53,15 @@ def predict(person, movie):
         return -1
 
 #main function
-#@jit(target ="cuda") 
-%%cython
+
 def get_recommend(subject, movie):
-    print("In get_recommend for movie " + str(movie))
+    #print("In get_recommend for movie " + str(movie))
     
     subject_opinions = get_person_opinions(subject)
     
     score = {}
     #572 people
+    
     for person in range(573):
         print('people = ' + str(person))
         person_opinions = get_person_opinions(person)
@@ -94,11 +95,16 @@ def get_recommend(subject, movie):
     print("Recommneded rating for movie " + str(movie) + ":" + str(recommended[0][0]))
     outl = movie_data[movie_data["person"] == person]
     outl = outl[outl["movie"] == movid]
+
+def main():  
+    for person in test['reviewerid']:
+        print("person = " + str(person))
+        testperson = test[test["reviewerid"] == person]
+        print(test[test["reviewerid"] == person])
+        for movie in testperson['movie-code']:
+            get_recommend(person, movie)
     
-for person in test['reviewerid']:
-    testperson = test[test["reviewerid"] == person]
-    print(test[test["reviewerid"] == person])
-    for movie in testperson['movie-code']:
-        get_recommend(person, movie)
-        
+
+pool = multiprocessing.Pool(processes=6)
+main()
 pool.close()
