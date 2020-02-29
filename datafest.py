@@ -10,7 +10,8 @@ from numba import jit, autojit
 imp = pd.read_csv("./CompetitionDataFinal/impressions-train.csv")
 fin = pd.read_csv("./CompetitionDataFinal/ratings-final.csv")
 test = pd.read_csv("./CompetitionDataFinal/test.csv")
-
+test = test.sort_values(by=['reviewerid'])
+print(test)
 movie_data = pd.concat([imp, fin], sort=True) 
 
 def get_person_opinions(person):
@@ -62,8 +63,8 @@ def get_recommend(subject, movie):
     score = {}
     #572 people
     
-    for person in range(573):
-        print('people = ' + str(person))
+    for person in range(10):
+        #print('people = ' + str(person))
         person_opinions = get_person_opinions(person)
         score[person] = 0
         
@@ -91,20 +92,28 @@ def get_recommend(subject, movie):
         recommended[i] += 1
     recommended.pop(-1)
     recommended = sorted(recommended.items(), key=lambda x: x[1],reverse=True)
-    print(recommended)
-    print("Recommneded rating for movie " + str(movie) + ":" + str(recommended[0][0]))
-    outl = movie_data[movie_data["person"] == person]
-    outl = outl[outl["movie"] == movid]
+    
+    print("Recommended rating for movie " + str(movie) + ":" + str(recommended[0][0]))
+    #outl = movie_data[movie_data["person"] == person]
+    #outl = outl[outl["movie"] == movid]
+    return recommended[0][0]
 
 def main():  
-    for person in test['reviewerid']:
+    i=0
+    for person in range(573):
         print("person = " + str(person))
         testperson = test[test["reviewerid"] == person]
         print(test[test["reviewerid"] == person])
+        
         for movie in testperson['movie-code']:
-            get_recommend(person, movie)
+            #testmovie = testperson[testperson['movie-code'] == movie]
+            test['rating'].iloc[i] = int(get_recommend(person, movie))
+            i+=1
+            print(test[test['reviewerid'] == person])
+            #test[test[test["reviewerid"] == person][testperson['movie-code'] == movie]]["rating"] = 
+        test.to_csv("./CompetitionDataFinal/test.csv", index=False)
     
 
-pool = multiprocessing.Pool(processes=6)
+#pool = multiprocessing.Pool(processes=6)
 main()
-pool.close()
+#pool.close()
