@@ -111,7 +111,7 @@ def main():
             i+=1
             print(test[test['reviewerid'] == person])
             #test[test[test["reviewerid"] == person][testperson['movie-code'] == movie]]["rating"] = 
-        test.to_csv("./1CompetitionDataFinal/test.csv", index=False)
+        test.to_csv("./CompetitionDataFinal/test.csv", index=False)
     
 
 #pool = multiprocessing.Pool(processes=6)
